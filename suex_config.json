@@ -1,0 +1,50 @@
+{
+    "mail_from": "john@johndoe.net",
+    "extractors": {
+        "Hagar the Horrible": {
+            "URL": "https://www.arcamax.com/thefunnies/hagarthehorrible",
+            "Xtor": "figure.comic img"
+        },
+        "Garfield": {
+            "URL": "http://www.gocomics.com/garfield/",
+            "Xtor": "picture.item-comic-image img"
+        },
+        "User Friendly": {
+            "URL": "http://www.userfriendly.org/",
+            "Xtor": "a img[alt=\"Latest Strip\"]"
+        },
+        "Slashdot": {
+            "URL": "https://slashdot.org/",
+            "Xtor": "section.bq p"
+        },
+        "Peanuts": {
+            "URL": "http://www.gocomics.com/peanuts",
+            "Xtor": "picture.item-comic-image img"
+        },
+        "Dilbert": {
+            "URL": "http://dilbert.com/",
+            "Xtor": "div.img-comic-container img"
+        },
+        "Calvin & Hobbes": {
+            "URL": "http://www.gocomics.com/calvinandhobbes/",
+            "Xtor": "picture.item-comic-image img"
+        },
+        "Mallard Duck": {
+            "URL": "https://www.arcamax.com/thefunnies/mallardfillmore/",
+            "Xtor": "figure.comic img"
+        },
+        "Bloom County": {
+            "URL": "http://www.berkeleybreathed.com/",
+            "Xtor": "div.img-wrapper img"
+        },
+        "deBono": {
+            "URL": "http://www.debonothinking.com/",
+            "Xtor": "body"
+        }
+    },
+    "subscriber_config": "suex_subs.json",
+    "smtp_server": "smtp_server.com",
+    "smtp_user": "test@acme.com",
+    "smtp_pass": "apassword",
+    "mail_from_name": "John Doe"
+}
