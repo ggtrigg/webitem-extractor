@@ -151,8 +151,7 @@ class Extractor:
 	    try:
 		img = MIMEImage(part)
 	    except TypeError, e:
-		logger.error('Can\'t determine image type. %s', e)
-		logger.error('Name is: %s', name)
+		logger.error('Can\'t determine image type for %s. %s', name, e)
 		logger.debug('Data: %s', part)
 		logger.error('Retrying using the magic library.')
 		try:
