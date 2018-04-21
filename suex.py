@@ -23,6 +23,8 @@ from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 
+import magic
+
 # ------------------------------
 
 class Config:
@@ -146,9 +148,22 @@ class Extractor:
             next
          elif ptype == 'img':
             pre_html += '<img src="cid:img%02d" alt="%s" width="100%%"><br /><br />' % (index, name.encode('utf-8'))
-            img = MIMEImage(part)
-            img.add_header('Content-ID', '<img%02d>' % index)
-            msg.attach(img)
+	    try:
+		img = MIMEImage(part)
+	    except TypeError, e:
+		logger.error('Can\'t determine image type. %s', e)
+		logger.error('Name is: %s', name)
+		logger.debug('Data: %s', part)
+		logger.error('Retrying using the magic library.')
+		try:
+		    m = magic.detect_from_content(part)
+		    img = MIMEImage(part, m.mime_type)
+		except TypeError, e:
+		    logger.error('Determining image type failed again, aborting.')
+		    img = None
+	    if(img):
+		img.add_header('Content-ID', '<img%02d>' % index)
+		msg.attach(img)
          else:
             pre_text += "\n" + part.get_text().encode('utf-8')
             pre_html += part.encode('utf-8')
