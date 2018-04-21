@@ -97,7 +97,13 @@ class Extractor:
       
       self.request = requests.get(target['URL'])
       soup = BeautifulSoup(self.request.text, 'html.parser')
-      part = soup.select_one(target['Xtor'])
+      try:
+	  part = soup.select_one(target['Xtor'])
+      except ValueError, e:
+	  logger.error('Error with extraction. %s', e)
+	  logger.error('Xtor is: %s', target['Xtor'])
+	  return None, None
+
       img = None
       try:
          ptype = part.name
