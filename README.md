@@ -59,7 +59,7 @@ TODO
 This file is a list of email addresses and corresponding list of extract
 names. For example:
 
-'''
+```
 {
     "person_a@domain.com": [
         "Garfield",
@@ -77,4 +77,4 @@ names. For example:
         "Bloom County"
     ]
 }
-'''
+```
