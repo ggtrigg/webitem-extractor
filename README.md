@@ -56,4 +56,25 @@ TODO
 
 ## suex_subs.json file format
 
-TODO
+This file is a list of email addresses and corresponding list of extract
+names. For example:
+
+'''
+{
+    "person_a@domain.com": [
+        "Garfield",
+        "Calvin & Hobbes"
+    ],
+    "person_b@other-domain.com": [
+        "deBono",
+        "Garfield",
+        "Peanuts",
+        "Calvin & Hobbes",
+        "Dilbert",
+        "Hagar the Horrible",
+        "User Friendly",
+        "Mallard Duck",
+        "Bloom County"
+    ]
+}
+'''
