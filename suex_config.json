@@ -11,7 +11,7 @@
         },
         "User Friendly": {
             "URL": "http://www.userfriendly.org/",
-            "Xtor": "a img[alt=\"Latest Strip\"]"
+            "Xtor": "br + a img"
         },
         "Slashdot": {
             "URL": "https://slashdot.org/",
