@@ -73,158 +73,163 @@ class Config:
 # ------------------------------
 
 class Extractor:
-   """ Extract a part of a web page and either print it or email it somewhere.
+    """ Extract a part of a web page and either print it or email it somewhere.
 
-   Used for extracting comic images to distribute via email.
-   """
+    Used for extracting comic images to distribute via email.
+    """
 
-   def __init__(self, config):
-      """Constructor."""
+    def __init__(self, config):
+	"""Constructor."""
 
-      self.config = config
-      self.cache = {}
-      pass
+	self.config = config
+	self.cache = {}
+	pass
 
-   def __del__(self):
-      """Destructor."""
-      pass
+    def __del__(self):
+	"""Destructor."""
+	pass
 
-   def get_part(self, name):
-      target = self.config['extractors'][name]
-      
-      # Check cache first
-      if name in self.cache:
-         logger.debug('Cache hit for %s', name)
-         return self.cache[name]
-      
-      self.request = requests.get(target['URL'])
-      soup = BeautifulSoup(self.request.text, 'html.parser')
-      try:
-	  part = soup.select_one(target['Xtor'])
-      except ValueError, e:
-	  logger.error('Error with extraction. %s', e)
-	  logger.error('Xtor is: %s', target['Xtor'])
-	  return None, None
+    def get_part(self, name):
+	target = self.config['extractors'][name]
 
-      img = None
-      try:
-         ptype = part.name
-         logger.debug('get_part: Got %s, contents: %s', ptype, part)
+	# Check cache first
+	if name in self.cache:
+	    logger.debug('Cache hit for %s', name)
+	    return self.cache[name]
 
-         if ptype == 'img':
-            if 'src' in part.attrs:
-               part['src'] = urljoin(target['URL'], part['src'])
-            elif 'data-src' in part.attrs:
-               part['src'] = urljoin(target['URL'], part['data-src'])
-            part = requests.get(part['src']).content
-      except AttributeError, e:
-         return None, None
+	try:
+	    self.request = requests.get(target['URL'])
+	except requests.exceptions.ConnectionError, e:
+	    logger.error('Error connecting to URL. %s', e)
+	    logger.error('URL: %s', target['URL'])
+	    return None, None
+	soup = BeautifulSoup(self.request.text, 'html.parser')
+	try:
+	    part = soup.select_one(target['Xtor'])
+	except ValueError, e:
+	    logger.error('Error with extraction. %s', e)
+	    logger.error('Xtor is: %s', target['Xtor'])
+	    return None, None
 
-      # Add part to cache
-      self.cache[name] = (ptype, part)
-      
-      return ptype, part
+	img = None
+	try:
+	    ptype = part.name
+	    logger.debug('get_part: Got %s, contents: %s', ptype, part)
 
-   def extract(self, name):
-      (ptype, part) = self.get_part(name)
-      return part
+	    if ptype == 'img':
+		if 'src' in part.attrs:
+		    part['src'] = urljoin(target['URL'], part['src'])
+		elif 'data-src' in part.attrs:
+		    part['src'] = urljoin(target['URL'], part['data-src'])
+		part = requests.get(part['src']).content
+	except AttributeError, e:
+	    return None, None
 
-   def email(self, names, recips, message):
+	# Add part to cache
+	self.cache[name] = (ptype, part)
 
-      msg = MIMEMultipart('related')
-      msg.preamble = 'This is a multi-part message in MIME format.'
-      msgAlt = MIMEMultipart('alternative')
-      msg.attach(msgAlt)
-      if message:
-         pre_text = message + "\n"
-         pre_html = '<p>%s<p><br />' % message
-      else:
-         pre_text = pre_html = ''
-      
-      index = 1
-      for name in names:
-         (ptype, part) = self.get_part(name)
-         if ptype == None:
-            next
-         elif ptype == 'img':
-            pre_html += '<img src="cid:img%02d" alt="%s" width="100%%"><br /><br />' % (index, name.encode('utf-8'))
-	    try:
-		img = MIMEImage(part)
-	    except TypeError, e:
-		logger.error('Can\'t determine image type for %s. %s', name, e)
-		logger.debug('Data: %s', part)
-		logger.error('Retrying using the magic library.')
+	return ptype, part
+
+    def extract(self, name):
+	(ptype, part) = self.get_part(name)
+	return part
+
+    def email(self, names, recips, message):
+
+	msg = MIMEMultipart('related')
+	msg.preamble = 'This is a multi-part message in MIME format.'
+	msgAlt = MIMEMultipart('alternative')
+	msg.attach(msgAlt)
+	if message:
+	    pre_text = message + "\n"
+	    pre_html = '<p>%s<p><br />' % message
+	else:
+	    pre_text = pre_html = ''
+
+	index = 1
+	for name in names:
+	    (ptype, part) = self.get_part(name)
+	    if ptype == None:
+		next
+	    elif ptype == 'img':
+		pre_html += '<img src="cid:img%02d" alt="%s" width="100%%"><br /><br />' % (index, name.encode('utf-8'))
 		try:
-		    m = magic.detect_from_content(part)
-		    img = MIMEImage(part, m.mime_type)
+		    img = MIMEImage(part)
 		except TypeError, e:
-		    logger.error('Determining image type failed again, aborting.')
-		    img = None
-	    if(img):
-		img.add_header('Content-ID', '<img%02d>' % index)
-		msg.attach(img)
-         else:
-            pre_text += "\n" + part.get_text().encode('utf-8')
-            pre_html += part.encode('utf-8')
-         index = index + 1
+		    logger.error('Can\'t determine image type for %s. %s', name, e)
+		    logger.debug('Data: %s', part)
+		    logger.error('Retrying using the magic library.')
+		    try:
+			m = magic.detect_from_content(part)
+			img = MIMEImage(part, m.mime_type)
+		    except TypeError, e:
+			logger.error('Determining image type failed again, aborting.')
+			img = None
+		if(img):
+		    img.add_header('Content-ID', '<img%02d>' % index)
+		    msg.attach(img)
+	    else:
+		pre_text += "\n" + part.get_text().encode('utf-8')
+		pre_html += part.encode('utf-8')
+	    index = index + 1
 
-      pre_text += "\nComics brought to you by suex.py, on the RaspberryPi3!"
-      pre_html += '<hr /><p>Comics brought to you by suex.py, on the RaspberryPi3!</p>'
-      msgAlt.attach(MIMEText(pre_text))
-      msgAlt.attach(MIMEText(pre_html, 'html'))
-      
-      msg['Subject'] = 'Comics of the day - ' + strftime('%B %d, %Y')
-      msg['From'] = '%s <%s>' % (self.config['mail_from_name'], self.config['mail_from'])
-      if len(recips) == 1:
-         msg['To'] = ', '.join(recips)
-      else:
-         msg['To'] = 'undisclosed-recipients:;'
+	pre_text += "\nComics brought to you by suex.py, on the RaspberryPi3!"
+	pre_html += '<hr /><p>Comics brought to you by suex.py, on the RaspberryPi3!</p>'
+	msgAlt.attach(MIMEText(pre_text))
+	msgAlt.attach(MIMEText(pre_html, 'html'))
 
-      logger.info('Sending email to %s', ', '.join(recips))
-      s = smtplib.SMTP(self.config['smtp_server'])
-      s.starttls()
-      (retval, retstr) = s.login(self.config['smtp_user'], self.config['smtp_pass'])
-      logger.debug('SMTP login. %s', retstr)
-      try:
-         errs = s.sendmail(self.config['mail_from'], recips, msg.as_string())
-         if len(errs):
-            logger.error('The following recipients did not receive the email. %s', ', '.join(errs))
-      except SMTPRecipientsRefused, e:
-         logger.error('Recipients refused. %s', e)
-      except SMTPHeloError, e:
-         logger.error('HELO error. %s', e)
-      except SMTPSenderRefused, e:
-         logger.error('Sender refused. %s', e)
-      except SMTPDataError, e:
-         logger.error('Data error. %s', e)
-      
-      s.quit()
-      return None
+	msg['Subject'] = 'Comics of the day - ' + strftime('%B %d, %Y')
+	msg['From'] = '%s <%s>' % (self.config['mail_from_name'], self.config['mail_from'])
+	if len(recips) == 1:
+	    msg['To'] = ', '.join(recips)
+	else:
+	    msg['To'] = 'undisclosed-recipients:;'
+
+	logger.info('Sending email to %s', ', '.join(recips))
+	s = smtplib.SMTP(self.config['smtp_server'])
+	s.starttls()
+	(retval, retstr) = s.login(self.config['smtp_user'], self.config['smtp_pass'])
+	logger.debug('SMTP login. %s', retstr)
+	try:
+	    errs = s.sendmail(self.config['mail_from'], recips, msg.as_string())
+	    if len(errs):
+		logger.error('The following recipients did not receive the email. %s', ', '.join(errs))
+	except SMTPRecipientsRefused, e:
+	    logger.error('Recipients refused. %s', e)
+	except SMTPHeloError, e:
+	    logger.error('HELO error. %s', e)
+	except SMTPSenderRefused, e:
+	    logger.error('Sender refused. %s', e)
+	except SMTPDataError, e:
+	    logger.error('Data error. %s', e)
+
+	s.quit()
+	return None
 
 
 def optimize_recipients(recips):
-   """ Return an optimized list where each list of recipients has the same
-   list of comics
-   """
+    """ Return an optimized list where each list of recipients has the same
+    list of comics
+    """
 
-   logging.debug('optimize_recipients start')
-   
-   res = []
+    logging.debug('optimize_recipients start')
 
-   # Go through every recipient to find a match or not in the res list
-   for eaddr in recips:
-      hit = 0
-      for target in res:
-         if set(recips[eaddr]) == set(target[1]):
-            # Add key to existing target list
-            target[0].append(eaddr)
-            hit = 1
-      if not hit:
-         res.append(([eaddr], recips[eaddr]))
+    res = []
 
-   logging.debug('optimize_recipients end, res = %s', res)
-      
-   return res
+    # Go through every recipient to find a match or not in the res list
+    for eaddr in recips:
+	hit = 0
+	for target in res:
+	    if set(recips[eaddr]) == set(target[1]):
+		# Add key to existing target list
+		target[0].append(eaddr)
+		hit = 1
+	if not hit:
+	    res.append(([eaddr], recips[eaddr]))
+
+    logging.debug('optimize_recipients end, res = %s', res)
+
+    return res
 
 
 # ------------------------------
